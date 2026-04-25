@@ -54,7 +54,10 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl border border-pink-100 p-6 hover:shadow-lg hover:shadow-pink-100/50 transition-shadow cursor-pointer">
+          <a
+            href="/chat/lin-banxia"
+            className="bg-white rounded-2xl border border-pink-100 p-6 hover:shadow-lg hover:shadow-pink-100/50 transition-shadow cursor-pointer block"
+          >
             <div className="w-20 h-20 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl">
               🎨
             </div>
@@ -67,9 +70,12 @@ export default function Home() {
             <p className="text-xs text-pink-400 text-center mt-3">
               舒适伴侣型 · 温暖松弛
             </p>
-          </div>
+          </a>
 
-          <div className="bg-white rounded-2xl border border-purple-100 p-6 hover:shadow-lg hover:shadow-purple-100/50 transition-shadow cursor-pointer">
+          <a
+            href="/chat/li-xia"
+            className="bg-white rounded-2xl border border-purple-100 p-6 hover:shadow-lg hover:shadow-purple-100/50 transition-shadow cursor-pointer block"
+          >
             <div className="w-20 h-20 bg-purple-100 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl">
               🎮
             </div>
@@ -82,7 +88,7 @@ export default function Home() {
             <p className="text-xs text-purple-400 text-center mt-3">
               傲娇毒舌型 · 独立飒爽
             </p>
-          </div>
+          </a>
         </div>
       </main>
     </div>
