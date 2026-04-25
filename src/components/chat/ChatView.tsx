@@ -20,6 +20,7 @@ export default function ChatView({
   const [affectionScore, setAffectionScore] = useState(35);
   const [historyConvId, setHistoryConvId] = useState<string | undefined>();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const {
     messages,
@@ -32,9 +33,7 @@ export default function ChatView({
   } = useChat({ characterCode, conversationId: historyConvId });
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText]);
 
   useEffect(() => {
@@ -86,11 +85,11 @@ export default function ChatView({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-pink-50/50 to-white">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-pink-100 bg-white/80 backdrop-blur-sm shrink-0">
+    <div className="flex flex-col h-dvh bg-gradient-to-b from-pink-50/50 to-white safe-area-inset">
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-pink-100 bg-white/80 backdrop-blur-sm shrink-0 [padding-top-env(safe-area-inset-top)]">
         <a
           href="/"
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-gray-400 hover:text-gray-600 transition-colors -ml-1 p-1"
         >
           <svg
             width="20"
@@ -108,15 +107,15 @@ export default function ChatView({
         <div className="w-9 h-9 bg-pink-100 rounded-full flex items-center justify-center text-lg">
           {characterEmoji}
         </div>
-        <div className="flex-1">
-          <h1 className="text-sm font-semibold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm font-semibold text-gray-900 truncate">
             {characterName}
           </h1>
           <AffectionBar score={affectionScore} compact />
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 scroll-smooth">
         {messages.length === 0 && !isStreaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center text-2xl mb-4">
@@ -137,11 +136,13 @@ export default function ChatView({
         {error && (
           <div className="text-center text-sm text-red-400 py-2">{error}</div>
         )}
+
+        <div ref={bottomRef} />
       </div>
 
       <AffectionBar score={affectionScore} />
 
-      <div className="shrink-0 border-t border-pink-100 bg-white px-4 py-3">
+      <div className="shrink-0 border-t border-pink-100 bg-white px-4 py-3 [padding-bottom-env(safe-area-inset-bottom)]">
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <textarea
             value={input}
@@ -149,7 +150,7 @@ export default function ChatView({
             onKeyDown={handleKeyDown}
             placeholder="输入消息..."
             rows={1}
-            className="flex-1 resize-none rounded-2xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 max-h-32"
+            className="flex-1 resize-none rounded-2xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 max-h-32 bg-gray-50/50"
             style={{ minHeight: "42px" }}
             onInput={(e) => {
               const el = e.currentTarget;
