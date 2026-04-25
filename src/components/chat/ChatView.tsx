@@ -16,6 +16,11 @@ export default function ChatView({
   characterName,
   characterEmoji,
 }: ChatPageProps) {
+  const [input, setInput] = useState("");
+  const [affectionScore, setAffectionScore] = useState(35);
+  const [historyConvId, setHistoryConvId] = useState<string | undefined>();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   const {
     messages,
     isStreaming,
@@ -23,11 +28,8 @@ export default function ChatView({
     error,
     sendMessage,
     stopStreaming,
-  } = useChat({ characterCode });
-
-  const [input, setInput] = useState("");
-  const [affectionScore, setAffectionScore] = useState(35);
-  const scrollRef = useRef<HTMLDivElement>(null);
+    loadMessages,
+  } = useChat({ characterCode, conversationId: historyConvId });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -36,7 +38,7 @@ export default function ChatView({
   }, [messages, streamingText]);
 
   useEffect(() => {
-    async function loadAffection() {
+    async function loadHistory() {
       try {
         const res = await fetch(`/api/chat/history?characterCode=${characterCode}`);
         if (res.ok) {
@@ -44,13 +46,30 @@ export default function ChatView({
           if (data.affectionScore != null) {
             setAffectionScore(data.affectionScore);
           }
+          if (data.activeConversationId) {
+            setHistoryConvId(data.activeConversationId);
+          }
+          if (data.messages && data.messages.length > 0) {
+            const historyMsgs = data.messages.map(
+              (m: Record<string, unknown>, i: number) => ({
+                id: String(m.id ?? `hist-${i}`),
+                sender: m.sender_type === "user" ? "user" as const : "character" as const,
+                content: String(m.content_text ?? ""),
+                type: String(m.message_type ?? "text") as "text" | "audio" | "image",
+                audioUrl: m.audio_url ? String(m.audio_url) : undefined,
+                imageUrl: m.image_url ? String(m.image_url) : undefined,
+                createdAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
+              })
+            );
+            loadMessages(historyMsgs);
+          }
         }
       } catch {
         // ignore
       }
     }
-    loadAffection();
-  }, [characterCode]);
+    loadHistory();
+  }, [characterCode, loadMessages]);
 
   function handleSend() {
     const text = input.trim();
