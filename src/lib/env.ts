@@ -1,0 +1,39 @@
+const env = {
+  database: {
+    url: process.env.DATABASE_URL!,
+  },
+  auth: {
+    secret: process.env.BETTER_AUTH_SECRET!,
+    url: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  },
+  volcengine: {
+    accessKey: process.env.VOLC_ACCESS_KEY ?? "",
+    secretKey: process.env.VOLC_SECRET_KEY ?? "",
+    llmEndpointId: process.env.VOLC_LLM_ENDPOINT_ID ?? "",
+    ttsAppId: process.env.VOLC_TTS_APP_ID ?? "",
+    imageApiKey: process.env.VOLC_IMAGE_API_KEY ?? "",
+  },
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID ?? "",
+    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
+    bucketName: process.env.R2_BUCKET_NAME ?? "",
+    publicUrl: process.env.R2_PUBLIC_URL ?? "",
+  },
+} as const;
+
+export type Env = typeof env;
+
+export function getEnv() {
+  return env;
+}
+
+export function isAIConfigured(): boolean {
+  const { volcengine: v } = env;
+  return !!(v.accessKey && v.secretKey && v.llmEndpointId);
+}
+
+export function isStorageConfigured(): boolean {
+  const { r2: r } = env;
+  return !!(r.accountId && r.accessKeyId && r.secretAccessKey && r.bucketName);
+}
