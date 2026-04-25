@@ -1,19 +1,17 @@
 import { betterAuth } from "better-auth";
 import { getEnv } from "@/lib/env";
 
-export function createAuth() {
-  const env = getEnv();
+export const auth = betterAuth({
+  database: {
+    connectionString: getEnv().database.url,
+  },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
+  },
+  baseURL: getEnv().auth.url,
+  secret: getEnv().auth.secret,
+});
 
-  return betterAuth({
-    database: {
-      connectionString: env.database.url,
-    },
-    emailAndPassword: {
-      enabled: true,
-    },
-    baseURL: env.auth.url,
-    secret: env.auth.secret,
-  });
-}
-
-export type Auth = ReturnType<typeof createAuth>;
+export type Auth = typeof auth;
