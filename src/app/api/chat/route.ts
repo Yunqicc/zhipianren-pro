@@ -3,7 +3,10 @@ import { getDb } from "@/lib/db";
 import { getLLMProvider } from "@/lib/ai";
 import { buildSystemPrompt } from "@/lib/prompt";
 import { parseLLMOutput } from "@/lib/prompt/parse";
+import { updateAffectionScore } from "@/lib/services/affection";
+import { extractAndUpdateMemories } from "@/lib/services/memory";
 import { headers } from "next/headers";
+import { after } from "next/server";
 
 export const maxDuration = 60;
 
@@ -125,6 +128,10 @@ export async function POST(request: Request) {
   const encoder = new TextEncoder();
   let fullResponse = "";
 
+  const capturedUcpId = ucpId;
+  const capturedAffectionScore = affectionScore;
+  const capturedUserMessage = message;
+
   const readable = new ReadableStream({
     async start(controller) {
       try {
@@ -158,7 +165,7 @@ export async function POST(request: Request) {
         `;
 
         await sql`
-          UPDATE user_character_profiles SET last_interaction_at = now(), updated_at = now() WHERE id = ${ucpId}
+          UPDATE user_character_profiles SET last_interaction_at = now(), updated_at = now() WHERE id = ${capturedUcpId}
         `;
 
         const result: Record<string, unknown> = {
@@ -172,6 +179,21 @@ export async function POST(request: Request) {
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify(result)}\n\n`)
         );
+
+        const conversationText = `用户：${capturedUserMessage}\n角色：${parsed.messages.join("\n")}`;
+        after(async () => {
+          await Promise.allSettled([
+            updateAffectionScore({
+              ucpId: capturedUcpId,
+              currentScore: capturedAffectionScore,
+              conversationText,
+            }),
+            extractAndUpdateMemories({
+              ucpId: capturedUcpId,
+              conversationText,
+            }),
+          ]);
+        });
       } catch (err) {
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: "error", message: String(err) })}\n\n`)

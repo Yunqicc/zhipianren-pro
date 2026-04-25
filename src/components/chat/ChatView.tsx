@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "@/lib/hooks/use-chat";
 import { MessageBubble, StreamingBubble } from "@/components/chat/MessageBubble";
+import { AffectionBar } from "@/components/chat/AffectionBar";
 
 interface ChatPageProps {
   characterCode: string;
@@ -10,7 +11,7 @@ interface ChatPageProps {
   characterEmoji: string;
 }
 
-export default function ChatPage({
+export default function ChatView({
   characterCode,
   characterName,
   characterEmoji,
@@ -25,14 +26,31 @@ export default function ChatPage({
   } = useChat({ characterCode });
 
   const [input, setInput] = useState("");
+  const [affectionScore, setAffectionScore] = useState(35);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, streamingText]);
+
+  useEffect(() => {
+    async function loadAffection() {
+      try {
+        const res = await fetch(`/api/chat/history?characterCode=${characterCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.affectionScore != null) {
+            setAffectionScore(data.affectionScore);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadAffection();
+  }, [characterCode]);
 
   function handleSend() {
     const text = input.trim();
@@ -71,11 +89,11 @@ export default function ChatPage({
         <div className="w-9 h-9 bg-pink-100 rounded-full flex items-center justify-center text-lg">
           {characterEmoji}
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-sm font-semibold text-gray-900">
             {characterName}
           </h1>
-          <p className="text-xs text-green-500">在线</p>
+          <AffectionBar score={affectionScore} compact />
         </div>
       </header>
 
@@ -102,10 +120,11 @@ export default function ChatPage({
         )}
       </div>
 
+      <AffectionBar score={affectionScore} />
+
       <div className="shrink-0 border-t border-pink-100 bg-white px-4 py-3">
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <textarea
-            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
