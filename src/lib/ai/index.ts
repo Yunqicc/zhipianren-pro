@@ -3,7 +3,7 @@ import { isAIConfigured } from "@/lib/env";
 import { MockLLMProvider } from "./providers/mock-llm";
 import { MockTTSProvider } from "./providers/mock-tts";
 import { MockImageProvider } from "./providers/mock-image";
-import { VolcengineLLMProvider } from "./providers/volcengine-llm";
+import { OpenAICompatibleLLMProvider } from "./providers/openai-compatible-llm";
 import { VolcengineTTSProvider } from "./providers/volcengine-tts";
 import { VolcengineImageProvider } from "./providers/volcengine-image";
 
@@ -14,7 +14,7 @@ let imageProvider: ImageProvider | null = null;
 export function getLLMProvider(): LLMProvider {
   if (!llmProvider) {
     if (isAIConfigured()) {
-      llmProvider = new VolcengineLLMProvider();
+      llmProvider = new OpenAICompatibleLLMProvider();
     } else {
       llmProvider = new MockLLMProvider();
     }
@@ -24,22 +24,14 @@ export function getLLMProvider(): LLMProvider {
 
 export function getTTSProvider(): TTSProvider {
   if (!ttsProvider) {
-    if (isAIConfigured()) {
-      ttsProvider = new VolcengineTTSProvider();
-    } else {
-      ttsProvider = new MockTTSProvider();
-    }
+    ttsProvider = new MockTTSProvider();
   }
   return ttsProvider;
 }
 
 export function getImageProvider(): ImageProvider {
   if (!imageProvider) {
-    if (isAIConfigured()) {
-      imageProvider = new VolcengineImageProvider();
-    } else {
-      imageProvider = new MockImageProvider();
-    }
+    imageProvider = new MockImageProvider();
   }
   return imageProvider;
 }

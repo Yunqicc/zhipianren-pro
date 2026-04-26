@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const dbReady = isDatabaseConfigured();
 
   if (!dbReady || demoCookie) {
-    return Response.json({ conversations: [], messages: [], affectionScore: 35 });
+    return Response.json({ conversations: [], messages: [], affectionScore: 35, hasMore: false });
   }
 
   let session: { user?: { id: string } } | null = null;
@@ -24,6 +24,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const conversationId = searchParams.get("conversationId");
   const characterCode = searchParams.get("characterCode");
+  const beforeSeq = searchParams.get("beforeSeq");
+  const limit = Math.min(parseInt(searchParams.get("limit") ?? "30"), 50);
 
   if (!characterCode) {
     return new Response("Missing characterCode", { status: 400 });
@@ -45,7 +47,7 @@ export async function GET(request: Request) {
   `;
 
   if (!ucp) {
-    return Response.json({ conversations: [], messages: [], affectionScore: 35 });
+    return Response.json({ conversations: [], messages: [], affectionScore: 35, hasMore: false });
   }
 
   let targetConvId = conversationId;
@@ -69,14 +71,33 @@ export async function GET(request: Request) {
   `;
 
   let messages: Record<string, unknown>[] = [];
+  let hasMore = false;
+
   if (targetConvId) {
-    messages = await sql`
-      SELECT id, sender_type, message_type, content_text, audio_url, image_url, sequence_no, created_at
-      FROM messages
-      WHERE conversation_id = ${targetConvId}
-      ORDER BY sequence_no ASC
-      LIMIT 100
-    `;
+    if (beforeSeq) {
+      messages = await sql`
+        SELECT id, sender_type, message_type, content_text, audio_url, image_url, sequence_no, created_at
+        FROM messages
+        WHERE conversation_id = ${targetConvId} AND sequence_no < ${parseInt(beforeSeq)}
+        ORDER BY sequence_no DESC
+        LIMIT ${limit + 1}
+      `;
+    } else {
+      messages = await sql`
+        SELECT id, sender_type, message_type, content_text, audio_url, image_url, sequence_no, created_at
+        FROM messages
+        WHERE conversation_id = ${targetConvId}
+        ORDER BY sequence_no DESC
+        LIMIT ${limit + 1}
+      `;
+    }
+
+    if (messages.length > limit) {
+      hasMore = true;
+      messages = messages.slice(0, limit);
+    }
+
+    messages = messages.reverse();
   }
 
   return Response.json({
@@ -84,5 +105,6 @@ export async function GET(request: Request) {
     messages,
     affectionScore: ucp.affection_score ?? 35,
     activeConversationId: targetConvId,
+    hasMore,
   });
 }

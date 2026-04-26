@@ -10,6 +10,7 @@ interface ChatMessage {
   audioUrl?: string;
   imageUrl?: string;
   createdAt: Date;
+  sequenceNo?: number;
 }
 
 interface UseChatOptions {
@@ -142,6 +143,10 @@ export function useChat({ characterCode, conversationId: initialConvId }: UseCha
     setMessages(msgs);
   }, []);
 
+  const prependMessages = useCallback((olderMsgs: ChatMessage[]) => {
+    setMessages((prev) => [...olderMsgs, ...prev]);
+  }, []);
+
   return {
     messages,
     isStreaming,
@@ -151,6 +156,7 @@ export function useChat({ characterCode, conversationId: initialConvId }: UseCha
     sendMessage,
     stopStreaming,
     loadMessages,
+    prependMessages,
   };
 }
 

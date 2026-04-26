@@ -7,6 +7,11 @@ const env = {
     secret: process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-in-production",
     url: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   },
+  llm: {
+    baseUrl: process.env.LLM_BASE_URL ?? "",
+    apiKey: process.env.LLM_API_KEY ?? "",
+    model: process.env.LLM_MODEL ?? "",
+  },
   volcengine: {
     accessKey: process.env.VOLC_ACCESS_KEY ?? "",
     secretKey: process.env.VOLC_SECRET_KEY ?? "",
@@ -37,9 +42,12 @@ export function isProd(): boolean {
   return env.nodeEnv === "production";
 }
 
+export function isLLMConfigured(): boolean {
+  return !!(env.llm.baseUrl && env.llm.apiKey && env.llm.model);
+}
+
 export function isAIConfigured(): boolean {
-  const { volcengine: v } = env;
-  return !!(v.accessKey && v.secretKey && v.llmEndpointId);
+  return isLLMConfigured();
 }
 
 export function isStorageConfigured(): boolean {
