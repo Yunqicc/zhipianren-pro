@@ -265,11 +265,15 @@ async function handleRealChat(params: {
         const parsed = parseLLMOutput(fullResponse);
 
         const charMsgSeq = nextSeq + 1;
+        const rawVoiceText = parsed.voiceTriggered ? parsed.messages[parsed.messages.length - 1] : null;
+        const voiceText = rawVoiceText ? rawVoiceText.replace(/（[^）]*）/g, "").replace(/\n/g, " ").trim() : null;
         for (let i = 0; i < parsed.messages.length; i++) {
+          const isLast = i === parsed.messages.length - 1;
+          const msgType = isLast && parsed.voiceTriggered ? "audio" : "text";
+          const triggerReason = isLast && parsed.voiceTriggered ? "voice" : isLast && parsed.photoPrompt ? "photo" : null;
           await sql`
             INSERT INTO messages (conversation_id, sender_type, message_type, content_text, sequence_no, generation_status, trigger_reason)
-            VALUES (${convId}, 'character', 'text', ${parsed.messages[i]}, ${charMsgSeq + i}, 'completed',
-              ${i === parsed.messages.length - 1 && parsed.voiceTriggered ? "voice" : parsed.photoPrompt ? "photo" : null})
+            VALUES (${convId}, 'character', ${msgType}, ${parsed.messages[i]}, ${charMsgSeq + i}, 'completed', ${triggerReason})
           `;
         }
 
@@ -287,13 +291,16 @@ async function handleRealChat(params: {
             conversationId: convId,
             messages: parsed.messages,
             voiceTriggered: parsed.voiceTriggered,
+            voiceText,
             photoPrompt: parsed.photoPrompt,
           })}\n\n`)
         );
 
         const conversationText = `用户：${capturedUserMessage}\n角色：${parsed.messages.join("\n")}`;
+        const capturedConvId = convId;
+        const capturedCharMsgSeq = charMsgSeq;
         after(async () => {
-          await Promise.allSettled([
+          const tasks: Promise<void>[] = [
             updateAffectionScore({
               ucpId: capturedUcpId,
               currentScore: capturedAffectionScore,
@@ -303,7 +310,32 @@ async function handleRealChat(params: {
               ucpId: capturedUcpId,
               conversationText,
             }),
-          ]);
+          ];
+
+          if (voiceText) {
+            tasks.push(
+              (async () => {
+                try {
+                  const { getTTSProvider } = await import("@/lib/ai");
+                  const { isTTSConfigured } = await import("@/lib/env");
+                  if (isTTSConfigured()) {
+                    const tts = getTTSProvider();
+                    const audioBuffer = await tts.synthesize({ text: voiceText });
+                    const audioBase64 = audioBuffer.toString("base64");
+                    const audioDataUrl = `data:audio/mpeg;base64,${audioBase64}`;
+                    await sql`
+                      UPDATE messages SET audio_url = ${audioDataUrl}
+                      WHERE conversation_id = ${capturedConvId} AND sequence_no = ${capturedCharMsgSeq + parsed.messages.length - 1}
+                    `;
+                  }
+                } catch (err) {
+                  console.error("TTS generation failed:", err);
+                }
+              })()
+            );
+          }
+
+          await Promise.allSettled(tasks);
         });
       } catch (err) {
         controller.enqueue(

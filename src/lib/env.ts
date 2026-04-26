@@ -12,6 +12,11 @@ const env = {
     apiKey: process.env.LLM_API_KEY ?? "",
     model: process.env.LLM_MODEL ?? "",
   },
+  tts: {
+    baseUrl: process.env.TTS_BASE_URL ?? "",
+    apiKey: process.env.TTS_API_KEY ?? "",
+    model: process.env.TTS_MODEL ?? "",
+  },
   volcengine: {
     accessKey: process.env.VOLC_ACCESS_KEY ?? "",
     secretKey: process.env.VOLC_SECRET_KEY ?? "",
@@ -44,6 +49,10 @@ export function isProd(): boolean {
 
 export function isLLMConfigured(): boolean {
   return !!(env.llm.baseUrl && env.llm.apiKey && env.llm.model);
+}
+
+export function isTTSConfigured(): boolean {
+  return !!(env.tts.baseUrl && env.tts.apiKey && env.tts.model);
 }
 
 export function isAIConfigured(): boolean {

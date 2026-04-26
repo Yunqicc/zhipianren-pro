@@ -24,8 +24,24 @@ interface SSEEvent {
   conversationId?: string;
   messages?: string[];
   voiceTriggered?: boolean;
+  voiceText?: string;
   photoPrompt?: string | null;
   message?: string;
+}
+
+async function fetchTTSAudio(text: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/chat/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
 }
 
 export function useChat({ characterCode, conversationId: initialConvId }: UseChatOptions) {
@@ -101,16 +117,31 @@ export function useChat({ characterCode, conversationId: initialConvId }: UseCha
                 }
 
                 if (event.messages && event.messages.length > 0) {
+                  const lastIdx = event.messages.length - 1;
                   const charMessages: ChatMessage[] = event.messages.map(
                     (msg, i) => ({
                       id: `char-${Date.now()}-${i}`,
                       sender: "character" as const,
                       content: msg,
-                      type: "text" as const,
+                      type: i === lastIdx && event.voiceTriggered ? "audio" as const : "text" as const,
                       createdAt: new Date(),
                     })
                   );
                   setMessages((prev) => [...prev, ...charMessages]);
+
+                  if (event.voiceTriggered && event.voiceText) {
+                    const voiceText = event.voiceText;
+                    const lastMsgId = charMessages[lastIdx].id;
+                    fetchTTSAudio(voiceText).then((audioUrl) => {
+                      if (audioUrl) {
+                        setMessages((prev) =>
+                          prev.map((m) =>
+                            m.id === lastMsgId ? { ...m, audioUrl } : m
+                          )
+                        );
+                      }
+                    });
+                  }
                 }
 
                 setStreamingText("");
