@@ -1,11 +1,21 @@
 import { auth } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { isDatabaseConfigured } from "@/lib/env";
 import { headers } from "next/headers";
 
 export async function GET(request: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const headerList = await headers();
+  const demoCookie = headerList.get("cookie")?.includes("zhipianren_demo_user");
+  const dbReady = isDatabaseConfigured();
+
+  if (!dbReady || demoCookie) {
+    return Response.json({ conversations: [], messages: [], affectionScore: 35 });
+  }
+
+  let session: { user?: { id: string } } | null = null;
+  try {
+    session = await auth.api.getSession({ headers: headerList });
+  } catch {}
 
   if (!session?.user) {
     return new Response("Unauthorized", { status: 401 });

@@ -1,9 +1,10 @@
 const env = {
+  nodeEnv: process.env.NODE_ENV ?? "development",
   database: {
-    url: process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL ?? "",
   },
   auth: {
-    secret: process.env.BETTER_AUTH_SECRET!,
+    secret: process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-in-production",
     url: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   },
   volcengine: {
@@ -28,6 +29,14 @@ export function getEnv() {
   return env;
 }
 
+export function isDev(): boolean {
+  return env.nodeEnv === "development";
+}
+
+export function isProd(): boolean {
+  return env.nodeEnv === "production";
+}
+
 export function isAIConfigured(): boolean {
   const { volcengine: v } = env;
   return !!(v.accessKey && v.secretKey && v.llmEndpointId);
@@ -36,4 +45,8 @@ export function isAIConfigured(): boolean {
 export function isStorageConfigured(): boolean {
   const { r2: r } = env;
   return !!(r.accountId && r.accessKeyId && r.secretAccessKey && r.bucketName);
+}
+
+export function isDatabaseConfigured(): boolean {
+  return !!env.database.url;
 }

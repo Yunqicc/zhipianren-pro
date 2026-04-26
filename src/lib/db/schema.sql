@@ -1,11 +1,11 @@
 -- BetterAuth 自动管理的表（不需要手动创建）：
 -- user, session, account, verification
--- BetterAuth 的 user 表会作为认证基础，我们的 users 表是业务扩展
+-- BetterAuth 的 user.id 是 TEXT 类型，所以外键也用 TEXT
 
 -- 业务用户扩展表（关联 BetterAuth 的 user 表）
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
   nickname VARCHAR(100),
   avatar_url TEXT,
   status VARCHAR(32) NOT NULL DEFAULT 'active',
@@ -43,7 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_characters_sort_order ON characters(sort_order);
 -- 用户-角色关系档案
 CREATE TABLE IF NOT EXISTS user_character_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   character_id UUID NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
   relationship_stage VARCHAR(32) NOT NULL DEFAULT 'new_couple',
   affection_score INT DEFAULT 35,
@@ -142,7 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_image_gen_created_at ON image_generations(created
 -- 用户每日额度表
 CREATE TABLE IF NOT EXISTS user_daily_quotas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   quota_date DATE NOT NULL,
   quota_type VARCHAR(64) NOT NULL,
   daily_limit INT NOT NULL DEFAULT 10,

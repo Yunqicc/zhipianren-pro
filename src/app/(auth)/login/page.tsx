@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +30,23 @@ export default function LoginPage() {
     }
 
     router.push("/");
+  }
+
+  async function handleDemoMode() {
+    setDemoLoading(true);
+    try {
+      const res = await fetch("/api/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "体验用户" }),
+      });
+      if (res.ok) {
+        router.push("/");
+      }
+    } catch {
+      setError("演示模式启动失败");
+    }
+    setDemoLoading(false);
   }
 
   return (
@@ -80,6 +98,26 @@ export default function LoginPage() {
             {loading ? "登录中..." : "登录"}
           </button>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-gradient-to-b from-pink-50 to-white px-3 text-gray-400">或者</span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleDemoMode}
+          disabled={demoLoading}
+          className="w-full py-2.5 bg-white text-gray-700 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {demoLoading ? "进入中..." : "🎯 免登录体验"}
+        </button>
+        <p className="text-xs text-gray-400 text-center mt-2">
+          演示模式使用模拟回复，无需配置数据库
+        </p>
 
         <p className="text-center text-sm text-gray-500 mt-6">
           还没有账号？{" "}
