@@ -1,5 +1,5 @@
 import type { LLMProvider, TTSProvider, ImageProvider } from "@/types/ai";
-import { isAIConfigured, isTTSConfigured } from "@/lib/env";
+import { isAIConfigured, isTTSConfigured, isImageConfigured } from "@/lib/env";
 import { MockLLMProvider } from "./providers/mock-llm";
 import { MockTTSProvider } from "./providers/mock-tts";
 import { MockImageProvider } from "./providers/mock-image";
@@ -36,7 +36,11 @@ export function getTTSProvider(): TTSProvider {
 
 export function getImageProvider(): ImageProvider {
   if (!imageProvider) {
-    imageProvider = new MockImageProvider();
+    if (isImageConfigured()) {
+      imageProvider = new VolcengineImageProvider();
+    } else {
+      imageProvider = new MockImageProvider();
+    }
   }
   return imageProvider;
 }

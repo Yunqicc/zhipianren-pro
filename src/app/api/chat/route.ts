@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     characterCode,
     message,
     conversationId,
-    userId: session.user.id,
+    userId: session!.user!.id,
     characterInfo,
   });
 }
@@ -146,7 +146,7 @@ async function handleRealChat(params: {
   const sql = getDb();
 
   const [character] = await sql`
-    SELECT id, code, name, system_prompt_template, base_image_url, voice_profile
+    SELECT id, code, name, system_prompt_template, base_image_url, visual_prompt, voice_profile
     FROM characters
     WHERE code = ${characterCode} AND is_active = true
   `;
@@ -299,14 +299,16 @@ async function handleRealChat(params: {
             voiceText,
             voiceProfile,
             photoPrompt: parsed.photoPrompt,
+            characterCode,
           })}\n\n`)
         );
 
         const conversationText = `用户：${capturedUserMessage}\n角色：${parsed.messages.join("\n")}`;
         const capturedConvId = convId;
         const capturedCharMsgSeq = charMsgSeq;
+        const capturedUserId = userId;
         after(async () => {
-          const tasks: Promise<void>[] = [
+          const tasks: Promise<unknown>[] = [
             updateAffectionScore({
               ucpId: capturedUcpId,
               currentScore: capturedAffectionScore,
@@ -341,6 +343,44 @@ async function handleRealChat(params: {
                   }
                 } catch (err) {
                   console.error("TTS generation failed:", err);
+                }
+              })()
+            );
+          }
+
+          if (parsed.photoPrompt) {
+            const capturedPhotoPrompt = parsed.photoPrompt;
+            const capturedVisualPrompt = character.visual_prompt;
+            const capturedBaseImageUrl = character.base_image_url;
+            tasks.push(
+              (async () => {
+                try {
+                  const { getImageProvider } = await import("@/lib/ai");
+                  const { isImageConfigured } = await import("@/lib/env");
+                  const { checkImageQuota, incrementImageQuota } = await import("@/lib/db/quota");
+                  if (isImageConfigured()) {
+                    const quota = await checkImageQuota(capturedUserId);
+                    if (!quota.allowed) {
+                      console.warn(`Image quota exceeded for user ${capturedUserId}: ${quota.used}/${quota.limit}`);
+                      return;
+                    }
+                    const imageProvider = getImageProvider();
+                    const fullPrompt = capturedVisualPrompt
+                      ? `${capturedVisualPrompt}, ${capturedPhotoPrompt}, lifestyle photography, natural, candid`
+                      : capturedPhotoPrompt;
+                    const imageUrl = await imageProvider.generateWithRef({
+                      prompt: fullPrompt,
+                      referenceImageUrl: capturedBaseImageUrl ?? "",
+                      strength: capturedBaseImageUrl ? 0.6 : undefined,
+                    });
+                    await incrementImageQuota(capturedUserId);
+                    await sql`
+                      UPDATE messages SET image_url = ${imageUrl}, message_type = 'image'
+                      WHERE conversation_id = ${capturedConvId} AND sequence_no = ${capturedCharMsgSeq + parsed.messages.length - 1}
+                    `;
+                  }
+                } catch (err) {
+                  console.error("Image generation failed:", err);
                 }
               })()
             );

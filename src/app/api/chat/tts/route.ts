@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const tts = getTTSProvider();
     const audioBuffer = await tts.synthesize({ text: text.trim(), voiceId, instructions });
 
-    return new Response(audioBuffer, {
+    return new Response(new Uint8Array(audioBuffer), {
       headers: {
         "Content-Type": "audio/mpeg",
         "Content-Length": String(audioBuffer.length),

@@ -27,6 +27,7 @@ interface SSEEvent {
   voiceText?: string;
   voiceProfile?: { voiceId?: string; instructions?: string } | null;
   photoPrompt?: string | null;
+  characterCode?: string;
   message?: string;
 }
 
@@ -40,6 +41,21 @@ async function fetchTTSAudio(text: string, voiceProfile?: { voiceId?: string; in
     if (!res.ok) return null;
     const blob = await res.blob();
     return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchImage(prompt: string, characterCode: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/chat/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, characterCode }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.imageUrl ?? null;
   } catch {
     return null;
   }
@@ -119,14 +135,20 @@ export function useChat({ characterCode, conversationId: initialConvId }: UseCha
 
                 if (event.messages && event.messages.length > 0) {
                   const lastIdx = event.messages.length - 1;
+                  const hasPhoto = !!event.photoPrompt;
                   const charMessages: ChatMessage[] = event.messages.map(
-                    (msg, i) => ({
-                      id: `char-${Date.now()}-${i}`,
-                      sender: "character" as const,
-                      content: msg,
-                      type: i === lastIdx && event.voiceTriggered ? "audio" as const : "text" as const,
-                      createdAt: new Date(),
-                    })
+                    (msg, i) => {
+                      let msgType: "text" | "audio" | "image" = "text";
+                      if (i === lastIdx && event.voiceTriggered) msgType = "audio";
+                      if (i === lastIdx && hasPhoto) msgType = "image";
+                      return {
+                        id: `char-${Date.now()}-${i}`,
+                        sender: "character" as const,
+                        content: msg,
+                        type: msgType,
+                        createdAt: new Date(),
+                      };
+                    }
                   );
                   setMessages((prev) => [...prev, ...charMessages]);
 
@@ -139,6 +161,20 @@ export function useChat({ characterCode, conversationId: initialConvId }: UseCha
                         setMessages((prev) =>
                           prev.map((m) =>
                             m.id === lastMsgId ? { ...m, audioUrl } : m
+                          )
+                        );
+                      }
+                    });
+                  }
+
+                  if (hasPhoto && event.photoPrompt) {
+                    const photoPrompt = event.photoPrompt;
+                    const lastMsgId = charMessages[lastIdx].id;
+                    fetchImage(photoPrompt, characterCode).then((imageUrl) => {
+                      if (imageUrl) {
+                        setMessages((prev) =>
+                          prev.map((m) =>
+                            m.id === lastMsgId ? { ...m, imageUrl } : m
                           )
                         );
                       }

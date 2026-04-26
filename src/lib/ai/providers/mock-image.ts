@@ -1,7 +1,10 @@
-import type { ImageProvider } from "@/types/ai";
+import type { ImageProvider, ImageGenParams } from "@/types/ai";
 
 export class MockImageProvider implements ImageProvider {
-  async generateWithRef(): Promise<string> {
-    return "https://placehold.co/512x512?text=Mock+Image";
+  async generateWithRef(params: ImageGenParams): Promise<string> {
+    const text = params.referenceImageUrl
+      ? `Mock+Image+(ref)`
+      : `Mock+Image`;
+    return `https://placehold.co/512x512/FFE4E6/EC4899?text=${text}`;
   }
 }

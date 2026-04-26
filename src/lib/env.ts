@@ -23,6 +23,7 @@ const env = {
     llmEndpointId: process.env.VOLC_LLM_ENDPOINT_ID ?? "",
     ttsAppId: process.env.VOLC_TTS_APP_ID ?? "",
     imageApiKey: process.env.VOLC_IMAGE_API_KEY ?? "",
+    imageBaseUrl: process.env.VOLC_IMAGE_BASE_URL ?? "https://visual.volcengineapi.com",
   },
   r2: {
     accountId: process.env.R2_ACCOUNT_ID ?? "",
@@ -66,4 +67,8 @@ export function isStorageConfigured(): boolean {
 
 export function isDatabaseConfigured(): boolean {
   return !!env.database.url;
+}
+
+export function isImageConfigured(): boolean {
+  return !!(env.volcengine.accessKey && env.volcengine.secretKey && env.volcengine.imageApiKey);
 }

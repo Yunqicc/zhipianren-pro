@@ -25,7 +25,7 @@ export interface TTSProvider {
 
 export interface ImageGenParams {
   prompt: string;
-  referenceImageUrl: string;
+  referenceImageUrl?: string;
   strength?: number;
 }
 
