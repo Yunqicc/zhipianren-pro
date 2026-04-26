@@ -10,6 +10,7 @@ export function getDb() {
     const needsSsl = url.includes("neon.tech") || url.includes("sslmode=require");
     sql = postgres(url, {
       ssl: needsSsl ? "require" : undefined,
+      prepare: false,
     });
   }
   return sql;

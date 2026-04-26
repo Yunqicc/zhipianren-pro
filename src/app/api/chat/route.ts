@@ -285,6 +285,11 @@ async function handleRealChat(params: {
           UPDATE user_character_profiles SET last_interaction_at = now(), updated_at = now() WHERE id = ${capturedUcpId}
         `;
 
+        let voiceProfile: { voiceId?: string; instructions?: string } | null = null;
+        try {
+          voiceProfile = character.voice_profile ? JSON.parse(character.voice_profile) : null;
+        } catch {}
+
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({
             type: "done",
@@ -292,6 +297,7 @@ async function handleRealChat(params: {
             messages: parsed.messages,
             voiceTriggered: parsed.voiceTriggered,
             voiceText,
+            voiceProfile,
             photoPrompt: parsed.photoPrompt,
           })}\n\n`)
         );
@@ -313,6 +319,7 @@ async function handleRealChat(params: {
           ];
 
           if (voiceText) {
+            const capturedVoiceProfile = voiceProfile;
             tasks.push(
               (async () => {
                 try {
@@ -320,7 +327,11 @@ async function handleRealChat(params: {
                   const { isTTSConfigured } = await import("@/lib/env");
                   if (isTTSConfigured()) {
                     const tts = getTTSProvider();
-                    const audioBuffer = await tts.synthesize({ text: voiceText });
+                    const audioBuffer = await tts.synthesize({
+                      text: voiceText,
+                      voiceId: capturedVoiceProfile?.voiceId,
+                      instructions: capturedVoiceProfile?.instructions,
+                    });
                     const audioBase64 = audioBuffer.toString("base64");
                     const audioDataUrl = `data:audio/mpeg;base64,${audioBase64}`;
                     await sql`

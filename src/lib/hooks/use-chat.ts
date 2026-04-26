@@ -25,16 +25,17 @@ interface SSEEvent {
   messages?: string[];
   voiceTriggered?: boolean;
   voiceText?: string;
+  voiceProfile?: { voiceId?: string; instructions?: string } | null;
   photoPrompt?: string | null;
   message?: string;
 }
 
-async function fetchTTSAudio(text: string): Promise<string | null> {
+async function fetchTTSAudio(text: string, voiceProfile?: { voiceId?: string; instructions?: string } | null): Promise<string | null> {
   try {
     const res = await fetch("/api/chat/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, voiceId: voiceProfile?.voiceId, instructions: voiceProfile?.instructions }),
     });
     if (!res.ok) return null;
     const blob = await res.blob();
@@ -131,8 +132,9 @@ export function useChat({ characterCode, conversationId: initialConvId }: UseCha
 
                   if (event.voiceTriggered && event.voiceText) {
                     const voiceText = event.voiceText;
+                    const voiceProfile = event.voiceProfile;
                     const lastMsgId = charMessages[lastIdx].id;
-                    fetchTTSAudio(voiceText).then((audioUrl) => {
+                    fetchTTSAudio(voiceText, voiceProfile).then((audioUrl) => {
                       if (audioUrl) {
                         setMessages((prev) =>
                           prev.map((m) =>

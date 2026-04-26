@@ -16,6 +16,7 @@ export interface LLMProvider {
 export interface TTSParams {
   text: string;
   voiceId?: string;
+  instructions?: string;
 }
 
 export interface TTSProvider {

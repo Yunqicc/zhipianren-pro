@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS characters (
   persona_summary TEXT,
   system_prompt_template TEXT,
   visual_prompt TEXT,
-  voice_profile VARCHAR(100),
+  voice_profile TEXT,
   sort_order INT NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

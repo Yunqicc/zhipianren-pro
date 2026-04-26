@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { text, voiceId } = body as { text: string; voiceId?: string };
+  const { text, voiceId, instructions } = body as { text: string; voiceId?: string; instructions?: string };
 
   if (!text?.trim()) {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
   try {
     const tts = getTTSProvider();
-    const audioBuffer = await tts.synthesize({ text: text.trim(), voiceId });
+    const audioBuffer = await tts.synthesize({ text: text.trim(), voiceId, instructions });
 
     return new Response(audioBuffer, {
       headers: {
