@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getImageProvider } from "@/lib/ai";
-import { isImageConfigured } from "@/lib/env";
+import { isImageConfigured, resolveImageUrl } from "@/lib/env";
 import { checkImageQuota, incrementImageQuota } from "@/lib/db/quota";
 import { getDb } from "@/lib/db";
 import { auth } from "@/lib/auth";
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         WHERE code = ${characterCode} AND is_active = true
       `;
       if (character) {
-        referenceImageUrl = character.base_image_url ?? "";
+        referenceImageUrl = resolveImageUrl(character.base_image_url ?? "");
         visualPrompt = character.visual_prompt ?? "";
       }
     }

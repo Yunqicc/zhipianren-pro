@@ -72,3 +72,10 @@ export function isDatabaseConfigured(): boolean {
 export function isImageConfigured(): boolean {
   return !!(env.volcengine.accessKey && env.volcengine.secretKey && env.volcengine.imageApiKey);
 }
+
+export function resolveImageUrl(path: string): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const base = env.auth.url.replace(/\/$/, "");
+  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+}

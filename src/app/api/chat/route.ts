@@ -356,7 +356,7 @@ async function handleRealChat(params: {
               (async () => {
                 try {
                   const { getImageProvider } = await import("@/lib/ai");
-                  const { isImageConfigured } = await import("@/lib/env");
+                  const { isImageConfigured, resolveImageUrl } = await import("@/lib/env");
                   const { checkImageQuota, incrementImageQuota } = await import("@/lib/db/quota");
                   if (isImageConfigured()) {
                     const quota = await checkImageQuota(capturedUserId);
@@ -370,7 +370,7 @@ async function handleRealChat(params: {
                       : capturedPhotoPrompt;
                     const imageUrl = await imageProvider.generateWithRef({
                       prompt: fullPrompt,
-                      referenceImageUrl: capturedBaseImageUrl ?? "",
+                      referenceImageUrl: resolveImageUrl(capturedBaseImageUrl ?? ""),
                       strength: capturedBaseImageUrl ? 0.6 : undefined,
                     });
                     await incrementImageQuota(capturedUserId);
